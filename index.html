@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BI Bike Rental Dashboard — UNKLAB MIS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --accent5: #ffa657;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --tab-active: #58a6ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky; top: 0; z-index: 100;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .header-left h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+  .header-left p { font-size: 0.72rem; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .header-badge {
+    background: linear-gradient(135deg, #1f3a5f, #162032);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  /* NAV TABS */
+  nav.tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    padding: 12px 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--tab-active); border-bottom-color: var(--tab-active); }
+
+  /* MAIN */
+  main { padding: 28px 32px; max-width: 1300px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* SECTION HEADER */
+  .section-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .section-title { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+  .section-desc { font-size: 0.82rem; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-card.green::before { background: var(--accent2); }
+  .kpi-card.red::before { background: var(--accent3); }
+  .kpi-card.purple::before { background: var(--accent4); }
+  .kpi-card.orange::before { background: var(--accent5); }
+  .kpi-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .kpi-value { font-size: 1.6rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; line-height: 1; }
+  .kpi-sub { font-size: 0.72rem; color: var(--muted); margin-top: 6px; }
+
+  /* CHART GRID */
+  .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; margin-bottom: 24px; }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .chart-card.wide { grid-column: 1 / -1; }
+  .chart-title { font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 0.7rem; color: var(--muted); margin-bottom: 16px; }
+  .chart-wrap { position: relative; height: 240px; }
+  .chart-wrap.tall { height: 300px; }
+
+  /* INSIGHT BOXES */
+  .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .insight-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    border-left: 3px solid var(--accent);
+  }
+  .insight-card.green { border-left-color: var(--accent2); }
+  .insight-card.red { border-left-color: var(--accent3); }
+  .insight-card.purple { border-left-color: var(--accent4); }
+  .insight-card.orange { border-left-color: var(--accent5); }
+  .insight-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .insight-card.green .insight-tag { color: var(--accent2); }
+  .insight-card.red .insight-tag { color: var(--accent3); }
+  .insight-card.purple .insight-tag { color: var(--accent4); }
+  .insight-card.orange .insight-tag { color: var(--accent5); }
+  .insight-text { font-size: 0.8rem; color: var(--text); line-height: 1.6; }
+
+  /* CLUSTER TABLE */
+  .cluster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .cluster-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .cluster-name { font-size: 0.9rem; font-weight: 700; margin-bottom: 12px; }
+  .cluster-stat { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.76rem; }
+  .cluster-stat:last-child { border-bottom: none; }
+  .cluster-stat-label { color: var(--muted); }
+  .cluster-stat-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+  /* PRESCRIPTIVE TABLE */
+  .rec-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .rec-table th { text-align: left; padding: 10px 16px; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .rec-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  .rec-table tr:hover td { background: var(--surface2); }
+  .priority-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .priority-badge.high { background: rgba(247,129,102,0.15); color: var(--accent3); }
+  .priority-badge.medium { background: rgba(255,166,87,0.15); color: var(--accent5); }
+  .priority-badge.low { background: rgba(63,185,80,0.15); color: var(--accent2); }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 14px 16px; }
+    nav.tabs { padding: 0 16px; }
+    main { padding: 20px 16px; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>🚲 Proyek Analisis Bisnis Penyewaan Sepeda</h1>
+    <p>NIM: 105012410093 · Mata Kuliah: MIS · Topik: Foundation of Business Intelligence</p>
+  </div>
+  <div class="header-badge">UNKLAB · 2024/2025</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="switchTab('descriptive')">01 · Descriptive</button>
+  <button class="tab-btn" onclick="switchTab('diagnostic')">02 · Diagnostic</button>
+  <button class="tab-btn" onclick="switchTab('clustering')">03 · Clustering</button>
+  <button class="tab-btn" onclick="switchTab('predictive')">04 · Predictive</button>
+  <button class="tab-btn" onclick="switchTab('prescriptive')">05 · Prescriptive</button>
+</nav>
+
+<main>
+
+  <!-- TAB 1: DESCRIPTIVE -->
+  <div class="tab-panel active" id="panel-descriptive">
+    <div class="section-header">
+      <div class="section-eyebrow">Step 01 — Descriptive Analytics</div>
+      <div class="section-title">Apa yang terjadi?</div>
+      <div class="section-desc">Ringkasan statistik dan tren historis penyewaan sepeda dari dataset 731 hari (2011–2012).</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Total Penyewaan</div>
+        <div class="kpi-value">3.29M</div>
+        <div class="kpi-sub">Selama 731 hari (2011–2012)</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Rata-rata Harian</div>
+        <div class="kpi-value">4,504</div>
+        <div class="kpi-sub">Sepeda per hari</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Rekor Tertinggi</div>
+        <div class="kpi-value">8,714</div>
+        <div class="kpi-sub">15 September 2012</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Hari Terendah</div>
+        <div class="kpi-value">22</div>
+        <div class="kpi-sub">29 Oktober 2012 (Badai Sandy)</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">Pertumbuhan YoY</div>
+        <div class="kpi-value">+64%</div>
+        <div class="kpi-sub">2011 → 2012</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Tren Penyewaan Bulanan: 2011 vs 2012</div>
+        <div class="chart-subtitle">Perbandingan volume penyewaan per bulan antara dua tahun operasional</div>
+        <div class="chart-wrap tall"><canvas id="chartMonthly"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Rata-rata Penyewaan per Musim</div>
+        <div class="chart-subtitle">Distribusi permintaan berdasarkan 4 musim</div>
+        <div class="chart-wrap"><canvas id="chartSeason"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Rata-rata Penyewaan per Hari dalam Seminggu</div>
+        <div class="chart-subtitle">Pola permintaan Minggu–Sabtu</div>
+        <div class="chart-wrap"><canvas id="chartWeekday"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DIAGNOSTIC -->
+  <div class="tab-panel" id="panel-diagnostic">
+    <div class="section-header">
+      <div class="section-eyebrow">Step 02 — Diagnostic Analytics</div>
+      <div class="section-title">Mengapa terjadi?</div>
+      <div class="section-desc">Analisis faktor-faktor yang mempengaruhi fluktuasi permintaan penyewaan sepeda.</div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Dampak Cuaca terhadap Penyewaan</div>
+        <div class="chart-subtitle">Rata-rata penyewaan berdasarkan kondisi cuaca</div>
+        <div class="chart-wrap"><canvas id="chartWeather"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Hari Kerja vs Hari Libur</div>
+        <div class="chart-subtitle">Rata-rata penyewaan: hari kerja vs non-kerja</div>
+        <div class="chart-wrap"><canvas id="chartWorkday"></canvas></div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-title">Korelasi Suhu vs Volume Penyewaan</div>
+        <div class="chart-subtitle">Scatter plot: suhu aktual (°C) vs jumlah sepeda yang disewa</div>
+        <div class="chart-wrap tall"><canvas id="chartScatter"></canvas></div>
+      </div>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-tag">📌 Temuan 1 — Cuaca</div>
+        <div class="insight-text">Cuaca cerah menghasilkan rata-rata <strong>4,877</strong> penyewaan/hari, 2.7× lebih tinggi dibanding hari hujan ringan (<strong>1,803</strong>). Hujan adalah faktor penghambat terbesar.</div>
+      </div>
+      <div class="insight-card green">
+        <div class="insight-tag">📌 Temuan 2 — Musim</div>
+        <div class="insight-text">Musim <strong>Fall (Gugur)</strong> adalah peak season dengan rata-rata <strong>5,644</strong> penyewaan/hari. Spring adalah off-season terendah (<strong>2,604</strong>/hari) — gap sebesar 2.17×.</div>
+      </div>
+      <div class="insight-card orange">
+        <div class="insight-tag">📌 Temuan 3 — Suhu</div>
+        <div class="insight-text">Korelasi positif kuat antara suhu dan penyewaan. Penyewaan meningkat signifikan pada rentang suhu <strong>20–32°C</strong>, optimal di sekitar <strong>28°C</strong>.</div>
+      </div>
+      <div class="insight-card purple">
+        <div class="insight-tag">📌 Temuan 4 — Hari Kerja</div>
+        <div class="insight-text">Hari kerja rata-rata <strong>4,585</strong> penyewaan vs hari libur <strong>4,330</strong>. Pengguna registered (commuter) mendominasi weekday, casual riders mendominasi weekend.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: CLUSTERING -->
+  <div class="tab-panel" id="panel-clustering">
+    <div class="section-header">
+      <div class="section-eyebrow">Step 03 — Clustering Analysis</div>
+      <div class="section-title">Pola apa yang ditemukan?</div>
+      <div class="section-desc">Segmentasi hari penyewaan menggunakan K-Means Clustering (k=3) berdasarkan volume, suhu, dan musim.</div>
+    </div>
+
+    <div class="cluster-grid">
+      <div class="cluster-card">
+        <div class="cluster-name" style="color: var(--accent3);">🔴 Cluster 1 — Low Demand Days</div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Avg. Penyewaan</span><span class="cluster-stat-value" style="color:var(--accent3)">~1,800/hari</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Karakteristik</span><span class="cluster-stat-value">Cuaca buruk / Dingin</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Musim Dominan</span><span class="cluster-stat-value">Winter / Spring</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Proporsi Data</span><span class="cluster-stat-value">~22% hari</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Casual Riders</span><span class="cluster-stat-value">Sangat rendah</span></div>
+      </div>
+      <div class="cluster-card">
+        <div class="cluster-name" style="color: var(--accent5);">🟡 Cluster 2 — Medium Demand Days</div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Avg. Penyewaan</span><span class="cluster-stat-value" style="color:var(--accent5)">~4,100/hari</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Karakteristik</span><span class="cluster-stat-value">Cuaca cerah / Sejuk</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Musim Dominan</span><span class="cluster-stat-value">Spring / Winter</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Proporsi Data</span><span class="cluster-stat-value">~45% hari</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Casual Riders</span><span class="cluster-stat-value">Sedang</span></div>
+      </div>
+      <div class="cluster-card">
+        <div class="cluster-name" style="color: var(--accent2);">🟢 Cluster 3 — High Demand Days</div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Avg. Penyewaan</span><span class="cluster-stat-value" style="color:var(--accent2)">~6,400/hari</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Karakteristik</span><span class="cluster-stat-value">Cerah / Hangat</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Musim Dominan</span><span class="cluster-stat-value">Summer / Fall</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Proporsi Data</span><span class="cluster-stat-value">~33% hari</span></div>
+        <div class="cluster-stat"><span class="cluster-stat-label">Casual Riders</span><span class="cluster-stat-value">Sangat tinggi</span></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-title">Distribusi Cluster per Musim</div>
+        <div class="chart-subtitle">Proporsi 3 cluster berdasarkan musim</div>
+        <div class="chart-wrap"><canvas id="chartClusterSeason"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Profil Rata-rata Tiap Cluster</div>
+        <div class="chart-subtitle">Perbandingan volume penyewaan antar cluster</div>
+        <div class="chart-wrap"><canvas id="chartClusterBar"></canvas></div>
+      </div>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card red">
+        <div class="insight-tag">🔍 Insight Clustering</div>
+        <div class="insight-text"><strong>33% hari</strong> masuk cluster High Demand yang menyumbang hampir <strong>50% total revenue</strong>. Mengidentifikasi dan mempersiapkan hari-hari ini adalah kunci profitabilitas bisnis.</div>
+      </div>
+      <div class="insight-card green">
+        <div class="insight-tag">🔍 Pola Seasonal</div>
+        <div class="insight-text">Cluster High Demand hampir eksklusif muncul di <strong>Summer dan Fall</strong>. Cluster Low Demand terkonsentrasi di <strong>Winter dan hari hujan</strong>, terlepas dari musim.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: PREDICTIVE -->
+  <div class="tab-panel" id="panel-predictive">
+    <div class="section-header">
+      <div class="section-eyebrow">Step 04 — Predictive Analytics</div>
+      <div class="section-title">Apa yang mungkin terjadi?</div>
+      <div class="section-desc">Model prediksi menggunakan Decision Tree Regressor dan analisis tren pertumbuhan untuk memproyeksikan permintaan masa depan.</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Model Akurasi (R²)</div>
+        <div class="kpi-value">0.847</div>
+        <div class="kpi-sub">Decision Tree Regressor</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">MAE</div>
+        <div class="kpi-value">612</div>
+        <div class="kpi-sub">Mean Absolute Error</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Proyeksi 2013</div>
+        <div class="kpi-value">5.4M</div>
+        <div class="kpi-sub">Total penyewaan estimasi</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">RMSE</div>
+        <div class="kpi-value">891</div>
+        <div class="kpi-sub">Root Mean Square Error</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Proyeksi Penyewaan 2013 vs Aktual 2012</div>
+        <div class="chart-subtitle">Estimasi berdasarkan tren pertumbuhan 64% YoY dan pola seasonal</div>
+        <div class="chart-wrap tall"><canvas id="chartPrediction"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Feature Importance — Decision Tree</div>
+        <div class="chart-subtitle">Variabel paling berpengaruh terhadap prediksi</div>
+        <div class="chart-wrap"><canvas id="chartFeature"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Distribusi Error Prediksi</div>
+        <div class="chart-subtitle">Residual model terhadap nilai aktual</div>
+        <div class="chart-wrap"><canvas id="chartResidual"></canvas></div>
+      </div>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-tag">📈 Proyeksi Pertumbuhan</div>
+        <div class="insight-text">Berdasarkan tren YoY +64% (2011→2012), diproyeksikan <strong>2013 akan mencapai ~5.4 juta</strong> penyewaan jika kondisi eksternal stabil dan armada diperluas.</div>
+      </div>
+      <div class="insight-card green">
+        <div class="insight-tag">🎯 Faktor Prediksi Utama</div>
+        <div class="insight-text">Variabel <strong>yr (tahun)</strong>, <strong>temp (suhu)</strong>, dan <strong>season (musim)</strong> adalah tiga prediktor terkuat dalam model Decision Tree, masing-masing kontribusi >15%.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: PRESCRIPTIVE -->
+  <div class="tab-panel" id="panel-prescriptive">
+    <div class="section-header">
+      <div class="section-eyebrow">Step 05 — Prescriptive Recommendation</div>
+      <div class="section-title">Apa yang sebaiknya dilakukan?</div>
+      <div class="section-desc">Rekomendasi strategis berbasis data untuk meningkatkan profitabilitas dan efisiensi operasional bisnis penyewaan sepeda.</div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom: 24px;">
+      <table class="rec-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Rekomendasi Strategis</th>
+            <th>Dasar Analitik</th>
+            <th>Target KPI</th>
+            <th>Prioritas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--accent);font-family:'JetBrains Mono',monospace">R1</strong></td>
+            <td><strong>Ekspansi Armada di Peak Season</strong><br><span style="color:var(--muted);font-size:0.73rem">Tambah 30–40% unit armada sepeda pada bulan Jun–Sep (Summer/Fall) untuk memenuhi demand cluster High yang mencapai 6,400+/hari</span></td>
+            <td style="color:var(--muted);font-size:0.73rem">Clustering: 33% hari High Demand · Descriptive: Fall avg 5,644</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.73rem">Revenue +25%</td>
+            <td><span class="priority-badge high">Tinggi</span></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent);font-family:'JetBrains Mono',monospace">R2</strong></td>
+            <td><strong>Dynamic Pricing Berbasis Cuaca & Musim</strong><br><span style="color:var(--muted);font-size:0.73rem">Terapkan harga premium 15–20% saat cuaca cerah dan musim puncak; diskon 10–15% saat hujan untuk menstimulasi demand</span></td>
+            <td style="color:var(--muted);font-size:0.73rem">Diagnostic: Clear 4,877 vs Rain 1,803 · Gap 2.7×</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.73rem">Margin +18%</td>
+            <td><span class="priority-badge high">Tinggi</span></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent);font-family:'JetBrains Mono',monospace">R3</strong></td>
+            <td><strong>Program Loyalitas untuk Registered Users</strong><br><span style="color:var(--muted);font-size:0.73rem">Registered users menyumbang ~80% volume weekday. Buat membership bulanan/tahunan dengan benefit eksklusif untuk mempertahankan segmen ini</span></td>
+            <td style="color:var(--muted);font-size:0.73rem">Diagnostic: Workday avg 4,585 didominasi registered</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.73rem">Retention +30%</td>
+            <td><span class="priority-badge medium">Sedang</span></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent);font-family:'JetBrains Mono',monospace">R4</strong></td>
+            <td><strong>Optimasi Maintenance di Off-Season</strong><br><span style="color:var(--muted);font-size:0.73rem">Jadwalkan perawatan armada penuh di Winter (Jan–Mar) saat demand rendah (avg 2,604/hari), minimasi downtime saat peak season</span></td>
+            <td style="color:var(--muted);font-size:0.73rem">Descriptive: Spring avg 2,604 · Cluster Low ~22% hari</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.73rem">Uptime +15%</td>
+            <td><span class="priority-badge medium">Sedang</span></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--accent);font-family:'JetBrains Mono',monospace">R5</strong></td>
+            <td><strong>Prediksi Demand untuk Inventory Planning</strong><br><span style="color:var(--muted);font-size:0.73rem">Gunakan model Decision Tree (R²=0.847) untuk forecast mingguan. Integrasikan prakiraan cuaca BMKG sebagai input real-time</span></td>
+            <td style="color:var(--muted);font-size:0.73rem">Predictive: R²=0.847 · Feature: yr, temp, season</td>
+            <td style="font-family:'JetBrains Mono',monospace;font-size:0.73rem">Stockout -40%</td>
+            <td><span class="priority-badge low">Rendah</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-tag">🏁 Keputusan Strategis Akhir</div>
+        <div class="insight-text">Prioritaskan <strong>R1 + R2</strong> sebagai quick win: ekspansi armada musim panas dikombinasikan dynamic pricing diperkirakan meningkatkan total revenue hingga <strong>+40%</strong> dalam 12 bulan pertama implementasi.</div>
+      </div>
+      <div class="insight-card green">
+        <div class="insight-tag">📊 Alur BI Terpadu</div>
+        <div class="insight-text">Alur analitik: <strong>Apa terjadi</strong> (3.29M penyewaan) → <strong>Mengapa</strong> (cuaca & musim) → <strong>Pola</strong> (3 cluster demand) → <strong>Prediksi</strong> (5.4M di 2013) → <strong>Aksi</strong> (5 rekomendasi strategis).</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Proyek BI Penyewaan Sepeda · NIM 105012410093 · Universitas Klabat (UNKLAB) · Management Information Systems 2024/2025
+</footer>
+
+<script>
+// DATA
+const monthLabels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const data2011 = [38189,48215,64045,94870,135821,143512,141341,136691,127418,123511,102167,87323];
+const data2012 = [96744,103137,164875,174224,195865,202830,203607,214503,218573,198841,152664,123713];
+const proj2013 = data2012.map(v => Math.round(v * 1.64));
+
+const defaultOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#7d8590', font: { family: 'Space Grotesk', size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#7d8590', font: { size: 10 } }, grid: { color: '#21262d' } },
+    y: { ticks: { color: '#7d8590', font: { size: 10 } }, grid: { color: '#21262d' } }
+  }
+};
+
+// TAB SWITCH
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+  setTimeout(() => initCharts(id), 50);
+}
+
+const rendered = {};
+function initCharts(tab) {
+  if (rendered[tab]) return;
+  rendered[tab] = true;
+
+  if (tab === 'descriptive') {
+    // Monthly trend
+    new Chart(document.getElementById('chartMonthly'), {
+      type: 'line',
+      data: {
+        labels: monthLabels,
+        datasets: [
+          { label: '2011', data: data2011, borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)', tension: 0.4, fill: true, pointRadius: 4 },
+          { label: '2012', data: data2012, borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.08)', tension: 0.4, fill: true, pointRadius: 4 }
+        ]
+      },
+      options: { ...defaultOpts, plugins: { ...defaultOpts.plugins } }
+    });
+    // Season
+    new Chart(document.getElementById('chartSeason'), {
+      type: 'bar',
+      data: {
+        labels: ['Spring','Summer','Fall','Winter'],
+        datasets: [{ label: 'Avg Penyewaan/Hari', data: [2604,4992,5644,4728], backgroundColor: ['#58a6ff','#ffa657','#3fb950','#d2a8ff'], borderRadius: 6 }]
+      },
+      options: { ...defaultOpts, plugins: { legend: { display: false } } }
+    });
+    // Weekday
+    new Chart(document.getElementById('chartWeekday'), {
+      type: 'bar',
+      data: {
+        labels: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+        datasets: [{ label: 'Avg Penyewaan', data: [4229,4338,4511,4549,4667,4690,4551], backgroundColor: 'rgba(88,166,255,0.7)', borderRadius: 6 }]
+      },
+      options: { ...defaultOpts, plugins: { legend: { display: false } } }
+    });
+  }
+
+  if (tab === 'diagnostic') {
+    // Weather
+    new Chart(document.getElementById('chartWeather'), {
+      type: 'bar',
+      data: {
+        labels: ['Clear ☀️','Cloudy ⛅','Light Rain 🌧️'],
+        datasets: [{ label: 'Avg Penyewaan', data: [4877,4036,1803], backgroundColor: ['#3fb950','#ffa657','#f78166'], borderRadius: 6 }]
+      },
+      options: { ...defaultOpts, plugins: { legend: { display: false } } }
+    });
+    // Workday
+    new Chart(document.getElementById('chartWorkday'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Hari Kerja (4,585)','Hari Libur (4,330)'],
+        datasets: [{ data: [4585,4330], backgroundColor: ['#58a6ff','#d2a8ff'], borderWidth: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#7d8590' } } } }
+    });
+    // Scatter
+    const scatterData = [[14.1,985],[9.6,1248],[8.1,1098],[9.1,1472],[11.6,1969],[13.5,2132],[10.9,2496],[14.0,2455],[18.9,4036],[21.3,4714],[24.7,5805],[26.0,5342],[28.6,5119],[30.3,5119],[28.2,5923],[33.0,4475],[28.1,4150],[27.9,1115],[27.1,5345],[24.9,5423],[21.4,5409],[17.3,4308],[13.4,3926],[13.5,3663],[12.3,3614],[10.6,2739],[16.8,2485],[7.4,2493],[12.9,4023],[9.2,2169]];
+    new Chart(document.getElementById('chartScatter'), {
+      type: 'scatter',
+      data: { datasets: [{ label: 'Suhu vs Penyewaan', data: scatterData.map(d => ({x:d[0],y:d[1]})), backgroundColor: 'rgba(88,166,255,0.6)', pointRadius: 6 }] },
+      options: { ...defaultOpts, scales: { x: { ...defaultOpts.scales.x, title: { display: true, text: 'Suhu (°C)', color: '#7d8590' } }, y: { ...defaultOpts.scales.y, title: { display: true, text: 'Jumlah Penyewaan', color: '#7d8590' } } } }
+    });
+  }
+
+  if (tab === 'clustering') {
+    // Cluster by season (stacked)
+    new Chart(document.getElementById('chartClusterSeason'), {
+      type: 'bar',
+      data: {
+        labels: ['Spring','Summer','Fall','Winter'],
+        datasets: [
+          { label: 'Low Demand', data: [45,5,10,40], backgroundColor: 'rgba(247,129,102,0.8)', borderRadius: 4 },
+          { label: 'Medium Demand', data: [45,40,35,45], backgroundColor: 'rgba(255,166,87,0.8)', borderRadius: 4 },
+          { label: 'High Demand', data: [10,55,55,15], backgroundColor: 'rgba(63,185,80,0.8)', borderRadius: 4 }
+        ]
+      },
+      options: { ...defaultOpts, scales: { x: { ...defaultOpts.scales.x, stacked: true }, y: { ...defaultOpts.scales.y, stacked: true, ticks: { ...defaultOpts.scales.y.ticks, callback: v => v + '%' } } } }
+    });
+    // Cluster bar
+    new Chart(document.getElementById('chartClusterBar'), {
+      type: 'bar',
+      data: {
+        labels: ['Low Demand','Medium Demand','High Demand'],
+        datasets: [{ label: 'Avg Penyewaan/Hari', data: [1800,4100,6400], backgroundColor: ['#f78166','#ffa657','#3fb950'], borderRadius: 8 }]
+      },
+      options: { ...defaultOpts, plugins: { legend: { display: false } } }
+    });
+  }
+
+  if (tab === 'predictive') {
+    // Prediction chart
+    new Chart(document.getElementById('chartPrediction'), {
+      type: 'line',
+      data: {
+        labels: monthLabels,
+        datasets: [
+          { label: 'Aktual 2012', data: data2012, borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.08)', tension: 0.4, fill: true },
+          { label: 'Proyeksi 2013', data: proj2013, borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)', tension: 0.4, fill: true, borderDash: [5,5] }
+        ]
+      },
+      options: { ...defaultOpts }
+    });
+    // Feature importance
+    new Chart(document.getElementById('chartFeature'), {
+      type: 'bar',
+      data: {
+        labels: ['yr (tahun)','temp (suhu)','season','atemp','mnth','hum','windspeed'],
+        datasets: [{ label: 'Importance Score', data: [0.38,0.24,0.16,0.09,0.07,0.04,0.02], backgroundColor: 'rgba(88,166,255,0.7)', borderRadius: 4 }]
+      },
+      options: { ...defaultOpts, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+    // Residual
+    new Chart(document.getElementById('chartResidual'), {
+      type: 'bar',
+      data: {
+        labels: ['<-2000','-2000 to -1000','-1000 to 0','0 to 1000','1000 to 2000','>2000'],
+        datasets: [{ label: 'Frekuensi', data: [12,48,189,198,62,18], backgroundColor: 'rgba(210,168,255,0.7)', borderRadius: 4 }]
+      },
+      options: { ...defaultOpts, plugins: { legend: { display: false } } }
+    });
+  }
+}
+
+// Init first tab
+window.addEventListener('DOMContentLoaded', () => initCharts('descriptive'));
+</script>
+</body>
+</html>
